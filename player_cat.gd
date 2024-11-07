@@ -53,6 +53,8 @@ func det_cur_state():
 	#update velocity 
 	
 	#do some stuff   
+
+	#etc
 	
 	
 	

@@ -1,64 +1,71 @@
+extends "res://Characters/entity_base.gd"
+class_name Entity
+
 
 #two states for COW_STATE
 enum COW_STATE { IDLE, WALK }
-
 @export var move_speed : float = 20
-@export var idle_time : float = 5
-@export var walk_time : float = 3
 
-#connecting node animation tree to a varible
-@onready var animation_tree = $AnimationTree
-#puts a varible to the animation tree to edit the animation states
-@onready var state_machine = animation_tree.get("parameters/playback")
-@onready var sprite = $Sprite2D
-@onready var timer = $Timer
-#@onready var 
+@export var idle_time : float = 1
+@export var walk_time : float = 2
+
+@export var target: Node2D = null
+#@onready var sprite = $Sprite2D
+
+
+@onready var timer = $Timer2
+@onready var fsm = $Finite_State_Machine
+@onready var wonder_state = $Finite_State_Machine/WonderState as WonderState
+@onready var follow_state = $Finite_State_Machine/FollowState as FollowState
+
+var cow_health : int = 100
 
 
 var move_direction : Vector2 = Vector2.ZERO
 var current_state : COW_STATE = COW_STATE.IDLE
+var p : int = 10
+
+var player_in_range = false
+
+
 
 func _ready():
-	pick_new_state()
-
-func _physics_process(_delta):
-	if(current_state == COW_STATE.WALK):
 	
-		velocity = move_direction * move_speed
 	
-		move_and_slide()
+	fsm.change_state(follow_state)
 	
-	#print("cow state: ", COW_STATE)
+	
+	#timer.start(10.0)
+	
+#func _physics_process(_delta):
+	#if x > 10:
+	#	fsm.change_state(otherstate)
 	
 	
 #randomly generate move direction between -1 , 1
-func select_new_direction():
-	move_direction = Vector2(
-		randi_range(-1,1),
-		randi_range(-1,1)
-	)
+
+func hittable():
+	pass
 	
-	if(move_direction.x < 0 ):
-		sprite.flip_h = true
-	elif(move_direction.x > 0):
-		sprite.flip_h = false 
-		
+func test():
+	#print("")
+	#print("COW HIT")
+	#print("")
+	cow_health = cow_health - 30
 	
-#switch from walking to idling
-func pick_new_state():
+	print("cow_health: ", cow_health)
+	if cow_health < 0:
+		sprite.flip_v = true
+
+
+func _on_timer_2_timeout() -> void:
+	fsm.change_state(follow_state)
 	
-	if(current_state == COW_STATE.IDLE):
-		state_machine.travel("walk_right")#changes animation
-		current_state = COW_STATE.WALK
-		select_new_direction()
-		timer.start(walk_time)
-		
-	elif(current_state == COW_STATE.WALK):
-		state_machine.travel("idle_right")#changes animation
-		current_state = COW_STATE.IDLE
-		timer.start(idle_time)
-	
-	
-func _on_timer_timeout():
-	pick_new_state()
-	
+
+
+
+
+
+func _on_cow_hitbox_body_exited(body: Node2D):
+	if body.has_method("player"):
+		player_in_range = false

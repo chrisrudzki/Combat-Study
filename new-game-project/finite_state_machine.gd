@@ -9,7 +9,7 @@ func _ready():
 	
 	
 func change_state(new_state: State):
-	print("changing state!")
+	#print("changing state!")
 	
 	if state is State:
 		

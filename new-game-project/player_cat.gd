@@ -1,225 +1,177 @@
-class_name Player
-extends CharacterBody2D
+class_name FollowState
+extends State
 
-var enemy_inattack_range = false
-var enemy_attack_cooldown = false
-var health = 100
-var player_alive = true
+@export var raycast1 : RayCast2D
+@export var raycast2 : RayCast2D
+@export var raycast3 : RayCast2D
+@export var raycast4 : RayCast2D
+@export var raycast5 : RayCast2D
+@export var raycast6 : RayCast2D
+@export var raycast7 : RayCast2D
+@export var raycast8 : RayCast2D
 
+@export var navigation_agent_2d : NavigationAgent2D
+@export var sprite : Sprite2D
+@export var animation_tree : AnimationTree
+@export var actor : Node
+@export var parent_node : Node
+@export var timer : Timer
+@export var knockback_power : float = 1000.0
+var knockback_duration : int = 10
 
-
-@export var move_speed : int = 100
-@export var starting_direction : Vector2 = Vector2(0, 1)
-# parameters/idle/blend_position
-
-@onready var animation_tree = $AnimationTree
-#@onready var timer = $Timer
-#stores the node animation free in editor as varible
 
 @onready var state_machine = animation_tree.get("parameters/playback")
 
-@export var attack_cooldown : float = 2
+@export var move_speed : float = 5
 
-@onready var new_player_pos = 0
-@onready var timer = $Timer
-@export var player_node = Node2D
-
-var is_knockback = false
-var k = 0
-
-var can_attack = false
-
-var hittable_obj = Node
-var is_knockback_timer = 0
-var drag_coefficient = 0.1
-
-#var velocity = Vector2(0,0)
-
-#var attack_cooldown = 10.0
-
-#parameters/idle/blend_position
-#this is the position in gadot to edit the idle perameter
+var player_in_range = false
+var reaction_time = 0.5
 
 func _ready():
-	update_animation_parameters(starting_direction)
-
-func player_knockback(new_pos):
 	
-	new_player_pos = new_pos
-	is_knockback = true
+	set_physics_process(false)
+	#call_deferred("seeker_setup")
+	
+func _enter_state():
+	
+	set_physics_process(true)
+	call_deferred("seeker_setup")
 
-		#_physics_process()
-		#velocity = velocity + new_pos
-		#print("knockback")
-		#move_and_slide()
-
+func _exit_state():
+	#print("exit follow state")
+	set_physics_process(false)
+	
+	#wait a physiscs frame before tree set up 
+func seeker_setup():
+	await get_tree().physics_frame
+	
+	#if target exists then nav agents target pos to target
+	if parent_node.target:
+		navigation_agent_2d.target_position = parent_node.target.global_position
+	
 
 func _physics_process(_delta):
 	
-	#print("-")
-	#enemy_attack()
 	
-	if health <= 0:
-		player_alive = false
-		#print("player dead!!")
-		health = 0
-		#do whatever death functions
+	if player_in_range == true:
+		#print("player in range")
+		if timer.is_stopped():
 		
 		
-	#get input direction
-	
-	var input_direction = Vector2(
-		Input.get_action_strength("right") - Input.get_action_strength("left"),
-		Input.get_action_strength("down") - Input.get_action_strength("up")
-	)
+		#THIS IS THE ISSUE 
+			timer.start(.3)
+	#else: 
+		#print("player not in range")
 	
 	
-	var attack_input = int(Input.get_action_strength("attack1"))
-	#print(attack_input)
-	
-	
-	if can_attack == true and attack_input == 1:
-		hittable_obj.test()
-		timer.start(attack_cooldown)
-		can_attack = false
-	
-	
-	
-	
-	update_animation_parameters(input_direction)
-	
-	#print("velocity: ", input_direction * move_speed)
-	
-	
-	
-	
-	
-	if is_knockback == true:
-		
-		velocity = velocity + new_player_pos.normalized() * 100
-		is_knockback_timer = 10
+	if parent_node.target:
+		navigation_agent_2d.target_position = parent_node.target.global_position
 		
 	
+	if navigation_agent_2d.is_navigation_finished():
+		return
+	
+	var current_agent_position = actor.global_position
+	var next_path_postition = navigation_agent_2d.get_next_path_position()
+	
+	
+	var norm_to_player_vector = current_agent_position.direction_to(next_path_postition)
+	#print("norm_to_player_vector", norm_to_player_vector)
+	#!
+	
+	#get dot product of each of the 8 directions and norm_to_player_vector
+	
+	#assuming normal x,y axis
+	var directions = [Vector2(0,-1), Vector2(1,-1),Vector2(1,0),Vector2(1,1),Vector2(0,1),Vector2(-1,1),Vector2(-1,0),Vector2(-1,-1)]
+	var intrest_arr = []
+	var smart_intrest_arr = []
+	var coll_arr = [0,0,0,0,0,0,0,0]
+	
+	var dot_product : float = 0
+	
+	
+	for i in range(len(directions)):
 		
-	#print("velocity")
-	if is_knockback_timer > 0:
-		print("is_knockback_timer")
-		print(velocity, " before")
-		velocity -= velocity * drag_coefficient * _delta
-		print(velocity, " after")
-		is_knockback_timer = is_knockback_timer -1 
-	else:
-		velocity = input_direction * move_speed
-		if velocity.length() < 0.1:
-			velocity = Vector2.ZERO
-		
-	#velocity = input_direction * move_speed
-	
-	
-	
-	#print(velocity)
-	
-	#print("is_knockback: ", is_knockback)
-	#if is_knockback == true:
-		#k = k+1
-		##print("player pos ", player_node.global_position)
-		##print("knockback pos ", new_player_pos)
-		##print("-")
-		##print(velocity)
-		##print(new_player_pos)
-		##print("-")
-		#
-		##print("newplayer direction", new_player_pos.normalized())
-		#velocity = new_player_pos.normalized() * 500
-		#just_hit = 5
-		#print("coll")
-		##velocity = velocity + new_player_pos
-	#
-	
-	#create a mechanic where it effects the pass after the knockback to knockback the player 1/2 the power
-	
-	
-	#just_hit = just_hit - 1
-	#
-	#if just_hit <= 3 and just_hit > 0:
-		#velocity =  velocity + (new_player_pos.normalized() * 500) / drag
-		#drag = drag * 2
-		#
-		
+		dot_product = (norm_to_player_vector.x * directions[i].x) + (norm_to_player_vector.y * directions[i].y)
+		intrest_arr.append(dot_product)
 		
 		
 	
 	
+	if raycast1.is_colliding():
+		
+		coll_arr = [8,4,0,0,0,0,0,4]
 	
+	if raycast2.is_colliding():
+		
+		coll_arr = [4,8,4,0,0,0,0,0]
+		
+	if raycast3.is_colliding():
+		coll_arr = [0,4,8,4,0,0,0,0]
+		
+	if raycast4.is_colliding():
+		coll_arr = [0,0,4,8,4,0,0,0]
+		
+	if raycast5.is_colliding():
+		coll_arr = [0,0,0,4,8,4,0,0]
+		
+	if raycast6.is_colliding():
+		
+		coll_arr = [0,0,0,0,4,8,4,0]
+		
+	if raycast7.is_colliding():
+		coll_arr = [0,0,0,0,0,4,8,4]
+		
+	if raycast8.is_colliding():
+		
+		coll_arr = [4,0,0,0,0,0,4,8]
 	
+	if coll_arr.is_empty() == false :
+		for i in range(len(intrest_arr)):
+			smart_intrest_arr.append(intrest_arr[i] - coll_arr[i])
+			
 	
-	#print("just_hit: ", just_hit)
-	move_and_slide()
+	var max_i = smart_intrest_arr.max()
+	var max_index = smart_intrest_arr.find(max_i)
 	
+	var steering_force = (directions[max_index] * move_speed)  - actor.velocity 
+	#var steering_force = (directions[max_index] * move_speed)  - actor.velocity 
+	actor.velocity = actor.velocity + (steering_force * _delta)
+	
+	actor.velocity = Vector2.ZERO
+	actor.move_and_slide()
 	det_cur_state()
+	sprite.flip_h = false if actor.velocity.x > 0 else true 
 	
-	is_knockback = false
-	
-	#just_hit = 0
 
-	
-func reduce_health(amount):
-	
-	health = health - amount
-
-
-
-func update_animation_parameters(move_input : Vector2):
-	
-	#gets movment input vector and converts it to blend position
-	if(move_input != Vector2.ZERO):
-		animation_tree.set("parameters/idle/blend_position", move_input)
-		animation_tree.set("parameters/walk/blend_position", move_input)
-		
-		
-	
 func det_cur_state():
-	if(velocity != Vector2.ZERO):
-		state_machine.travel("walk")
+	
+	if actor.velocity != Vector2.ZERO:
+		state_machine.travel("walk_right")
+		#print("here")
 	else:
-		state_machine.travel("idle")
-		#print("idle")
-	
-	#update velocity 
-	
-	#do some stuff   
-	#etc
-	
-func player():
-	pass
-	
-
-#i dont understand this connection
-func _on_player_hitbox_body_entered(body: Node2D) -> void:
-	if body.has_method("hittable"):
-		can_attack = true
-		hittable_obj = body 
-	#if body.has_method("enemy"):
-		#enemy_inattack_range = true
-		#
-
-func _on_player_hitbox_body_exited(body: Node2D) -> void:
-	if body.has_method("hittable"):
-		can_attack = false
-	#if body.has_method("enemy"):
-		#enemy_inattack_range = false
-		#
+		state_machine.travel("idle_right")
 
 
-#
-#func enemy_attack():
-	#if enemy_inattack_range and enemy_attack_cooldown == false:
-		#health = health - 10
-		#enemy_attack_cooldown = true
-		#timer.start(attack_cooldown)
+func _on_cow_hitbox_body_entered(body: Node2D) -> void:
+	if body.has_method("player"):
 		
+		player_in_range = true
 
 
 
-func _on_timer_timeout() -> void:
-	can_attack = true
+func _on_cow_hitbox_body_exited(body: Node2D) -> void:
+	if body.has_method("player"):
+		
+		player_in_range = false
+
+
+func _on_timer_3_timeout() -> void:
+	
+	parent_node.target.reduce_health(20)
+	
+	if player_in_range == true:
+		
+		parent_node.target.reduce_health(20)
+		parent_node.target.player_knockback((parent_node.target.global_position - actor.global_position).normalized()*knockback_power)
+	

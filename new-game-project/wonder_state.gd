@@ -9,8 +9,9 @@ extends State
 
 @export var actor: Entity
 @export var animation_tree: AnimationTree
+#!
 
-
+#!
 @onready var state_machine = animation_tree.get("parameters/playback")
 
 @export var timer : Node
@@ -85,3 +86,4 @@ func _on_timer_timeout():
 	#print("timer timeout")
 	pick_new_state()
 	#pass # Replace with function body.
+

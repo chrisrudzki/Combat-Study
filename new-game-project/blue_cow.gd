@@ -1,5 +1,6 @@
-extends "res://Characters/entity_base.gd"
+extends CharacterBody2D
 class_name Entity
+
 
 
 #two states for COW_STATE
@@ -17,6 +18,14 @@ enum COW_STATE { IDLE, WALK }
 @onready var fsm = $Finite_State_Machine
 @onready var wonder_state = $Finite_State_Machine/WonderState as WonderState
 @onready var follow_state = $Finite_State_Machine/FollowState as FollowState
+
+
+@onready var animation_tree = $AnimationTree
+@onready var state_machine = animation_tree.get("parameters/playback")
+@onready var sprite = $Sprite2D
+
+#@onready var cow_hitbox = $cow_hitbox
+#@onready var collisionshape = cow_hitbox.get("CollisionShape2D"")
 
 var cow_health : int = 100
 
@@ -47,25 +56,25 @@ func _ready():
 func hittable():
 	pass
 	
-func test():
-	#print("")
-	#print("COW HIT")
-	#print("")
+func hit_cow():
+	
+
 	cow_health = cow_health - 30
 	
-	print("cow_health: ", cow_health)
+	
+	
+	#print("cow_health: ", cow_health)
 	if cow_health < 0:
-		sprite.flip_v = true
+		#$CollisionShape2D.disabled = true
+		$cow_hitbox/CollisionShape2D2.disabled = true
+		
+		set_physics_process(false)
+		queue_free()
 
 
 func _on_timer_2_timeout() -> void:
 	fsm.change_state(follow_state)
 	
-
-
-
-
-
 func _on_cow_hitbox_body_exited(body: Node2D):
 	if body.has_method("player"):
 		player_in_range = false

@@ -1,3 +1,4 @@
+
 extends CharacterBody2D
 
 @export var move_speed : int = 520
@@ -8,21 +9,27 @@ var input_direction = starting_direction
 #print
 #var boid_num = 9999
 #
-var boid_avoids_p = false
-var player_free = true
+var boid_avoids = false
 @onready var timer = $Timer
 var prev_input_direction = starting_direction
 var player_rolling = false
 
+var health = 100
+
 func player():
 	pass
 	
-
+func get_hit(x):
+	
+	
+	health = health - x
+	print("HEALTH: ", health)
+	
 
 
 func _physics_process(_delta):
 	
-	if player_free:
+	if !player_rolling:
 		input_direction = Vector2(
 			Input.get_action_strength("right") - Input.get_action_strength("left"),
 			Input.get_action_strength("down") - Input.get_action_strength("up")
@@ -42,11 +49,10 @@ func _physics_process(_delta):
 	var player_roll = Input.get_action_strength("space")
 	
 	if player_roll:
-		boid_avoids_p = true
+		boid_avoids = true
 		player_rolling = true
-		player_free = false
 		move_speed = 1000
-		print(prev_input_direction)
+		
 		timer.wait_time = .17
 		timer.start()
 		
@@ -58,8 +64,6 @@ func _physics_process(_delta):
 	input_direction = input_direction.normalized()
 	
 	
-	
-	
 	velocity = input_direction * move_speed
 	
 	if velocity.x > move_speed or velocity.y > move_speed:
@@ -69,11 +73,9 @@ func _physics_process(_delta):
 	
 	move_and_slide()
 	
-
-
+	
 func _on_timer_timeout() -> void:
 	move_speed = 520
-	player_free = true
 	player_rolling = false
-	boid_avoids_p = false
+	boid_avoids = false
 	velocity = Vector2.ZERO # Replace with function body.

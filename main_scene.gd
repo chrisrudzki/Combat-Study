@@ -131,7 +131,6 @@ func rule2(b):
 	
 	var neighbours = b.all_neighbours()
 	#
-	var neighbours_and_p = b.all_neighbours_and_p()
 	
 	
 	
@@ -144,7 +143,7 @@ func rule2(b):
 			c = c.normalized()
 			#print("c: ", c)
 	
-	if b.get_player() != null:
+	if b.does_boid_avoid() == true:
 		var p = b.get_player()
 		
 		
@@ -191,7 +190,7 @@ func avoid_map_col(b):
 	var raycasts = b.all_raycasts()
 	#.get_children()
 
-	##UNDERSTANDD THIS 
+	#UNDERSTANDD THIS 
 	
 	for r in raycasts:
 		

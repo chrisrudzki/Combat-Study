@@ -21,6 +21,8 @@ var vel_slow = 2
 @onready var timer = $Timer
 @onready var timer2 = $Timer2
 
+
+
 var melee_dmg = 25
 
 var melee_cooldown = false
@@ -29,6 +31,9 @@ var boid_stop = false
 var knockback_timer = 0
 var drag_coefficient = .0001
 var dir_to
+var is_daddy_boid = true
+var new_path_timer = 0
+var area = 99
 
 #offset centre, adj movement, nearby velocity
 var oc = Vector2.ZERO
@@ -57,9 +62,17 @@ func get_player():
 	if player != null:
 		return player
 		
+func in_area(new_area):
+	
+	print("NEW AREA")
+	area = new_area
+		
 	
 func _physics_process(_delta: float):
 	
+	print(area)
+	
+	#clean up
 	var parent = get_parent()
 	var player = parent.get_node("Player")
 	
@@ -74,19 +87,47 @@ func _physics_process(_delta: float):
 	
 	var path_arr = parent.get_path_arr(position, player.position)
 	
+	#print("path length ",  len(path_arr))
 	
+	
+	if len(path_arr) > 150:
+		path_arr = null
 	#print("size ", path_arr.size())
 	
 	#print("player pos ", player.position)
 	#print("boid pos ", position)
-	#
-	if path_arr:
+	
+	
+	dir_to = Vector2(1,1)
+	#print("is daddy boid " , is_daddy_boid)
+	
+	if is_daddy_boid == false:
+		#print("little boid")
+		for i in len(neighbours):
+			if neighbours[i].is_daddy_boid == true:
+				#print("found dad")
+				#print("dad dir to ", neighbours[i].dir_to)
+				if neighbours[i].dir_to == null:
+					dir_to = Vector2(0,0)
+					#print("null")
+				else:
+					#print("not null")
+					dir_to = neighbours[i].dir_to
+				#print("real dir_to", neighbours[i].dir_to)
+				
+	
+	#print(is_daddy_boid, ": is daddy ")
+	elif path_arr != null and new_path_timer == 0:
+		new_path_timer = 150
+		
+		#print("daddyboid ")
 		dir_to = position.direction_to(path_arr[2])
 		#print("vel 1 ", velocity)
-	
+		rotation = lerp_angle(rotation, position.direction_to(path_arr[2]).angle(), .4)
 		#print("dir to ", dir_to)
 	
-		rotation = lerp_angle(rotation, position.direction_to(path_arr[2]).angle(), .4)
+	new_path_timer = new_path_timer -1
+	#rotation = lerp_angle(rotation, position.direction_to(path_arr[2]).angle(), .4)
 		
 		
 	#add dir_to
@@ -230,11 +271,15 @@ func _physics_process(_delta: float):
 	#
 	
 	
-	print("dir_to ", dir_to)
+	#print("dir_to ", dir_to)
 	#print("oc ", oc)
 	#print("am ", am)
 	#print("nv ", nv)
 	#
+	if path_arr == null:
+		dir_to = Vector2.ZERO
+	
+	#print("dir_to ", is_daddy_boid , dir_to)
 	velocity = (dir_to + oc/2 +  am + nv) * movement_speed * _delta
 	
 	
@@ -242,8 +287,8 @@ func _physics_process(_delta: float):
 	#print("vel2 ", velocity)
 	#move_and_collide(velocity * movement_speed * _delta)
 	
-	print("velo end", velocity)
-	
+	#print("velo end", velocity)
+	#print(" ")
 	move_and_slide()
 	oc = Vector2.ZERO
 	am = Vector2.ZERO
@@ -269,15 +314,19 @@ func _on_area_2d_body_entered(body: Node2D) -> void:
 	if (body.has_method("boid") and body.boid_num != boid_num):
 		#print("appending here!!")
 		neighbours.append(body)
-	
+		if is_daddy_boid == true and body.is_daddy_boid == true:
+			body.is_daddy_boid = false
+		#elif is_daddy_boid true and 
+		
 	
 	
 func _on_area_2d_body_exited(body: Node2D) -> void:
 	
 	
 	if body.has_method("boid") and body.boid_num != boid_num:
-		
 		neighbours.erase(body)
+		if neighbours.size() == 0 and is_daddy_boid == true:
+			is_daddy_boid = false
 		
 	if body.has_method("player"):
 		
